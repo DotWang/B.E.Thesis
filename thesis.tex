@@ -1,0 +1,1064 @@
+\documentclass[supercite]{upcthesis}
+\usepackage{lipsum}
+\usepackage{makecell}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{amsfonts,amssymb}
+\usepackage{subfigure}
+\usepackage{enumerate}
+\usepackage{graphicx}
+\usepackage{epstopdf}
+\usepackage{etoolbox}
+\usepackage{titlesec}
+\usepackage{tocloft}
+\titlespacing*{\subsubsection}{0pt}{0.5ex plus .2ex minus .2ex}{%
+	0.5ex plus .2ex
+}
+\titlespacing*{\subsection}{0pt}{0.5ex plus .2ex minus .2ex}{%
+	0.5ex plus .2ex
+}
+\let\oldthebibliography \thebibliography
+\let\endoldthebibliography \endthebibliography
+%\renewenvironment{thebibliography}[1]{%
+%	\begin{oldthebibliography}{#1}%
+%		\setlength{\parskip}{0ex}%
+%		\setlength{\itemsep}{0ex}%
+%		\setlength{\itemindent}{4ex}
+%		\setlength{\leftmargin}{-3pt}%
+%	}%
+%	{
+%	\end{oldthebibliography}%
+%}
+\renewcommand{\theequation}{\thesection -\arabic{equation}}
+\makeatletter
+\renewenvironment{thebibliography}[1]
+{\section*{\refname}%
+	\@mkboth{\MakeUppercase\refname}{\MakeUppercase\refname}%
+	\list{\@biblabel{\@arabic\c@enumiv}}%
+	{\settowidth\labelwidth{\@biblabel{#1}}%
+		\setlength{\itemindent}{\dimexpr\labelwidth+\labelsep}
+		\leftmargin\z@
+		\@openbib@code
+		\usecounter{enumiv}%
+		\let\p@enumiv\@empty
+		\renewcommand\theenumiv{\@arabic\c@enumiv}}%
+	\sloppy
+	\clubpenalty4000
+	\@clubpenalty \clubpenalty
+	\widowpenalty4000%
+	\sfcode`\.\@m}
+{\def\@noitemerr
+	{\@latex@warning{Empty `thebibliography' environment}}%
+	\endlist}
+\@addtoreset{equation}{section}
+\makeatother
+\title{基于支持向量机的遥感影像湖泊水体分类方法}
+\author{王迪}
+\date{2018年6月21日}
+\supervisor{曾\hspace{0.53cm}喆、\hspace{0.3cm}杜\hspace{0.53cm}博}
+\stuid{1401060217}
+\classnum{测绘工程14-2班}
+%\subtitle{这是副标题}
+\entitle{\begin{center}Classification Method of Lake Water in Remote Sensing Image
+	 Based on Support Vector Machine\end{center}}
+%\ensubtitle{This is EnSubTitle}
+\begin{document}
+	\maketitle
+%	\lipsum[1]
+	\begin{cnabstract}{直方图区域分割法；SVM；水体分类；特征组合}
+		为了研究湖泊区域水资源变化情况，需要探测湖泊自然水体及鱼塘等人工水体并分类。本文借助Landsat多光谱遥感影像数据通过多种水体提取指标提取水体，并顾及传感器差异，确定传感器对应的最适指标，并采用直方图区域分割法自动确定提取阈值。在面向对象的思想下，采用传统的特征工程工作流程，基于支持向量机算法对提取后的水体进行分类来区分湖泊自然水体与鱼塘，同时考虑水体对象在光谱与几何两方面多种特性，并给出一种表征湖泊水体和鱼塘差异的对象弯曲度特征，将不同特征组合导入分类器中进行分类及精度评定。结果显示：在Landsat影像上，该特征较其他特征有明显优越性，其对于复杂场景的适应性更强，对确定自然与人工地物在几何层面的本质差异以便在水资源变化监测中量化人类活动等影响因子提供借鉴和参考，并为后续研究奠定基础。
+	\end{cnabstract}
+    
+	\begin{enabstract}{Histogram Segmentation Method；SVM；Waterbody Classification； Feature Combination}
+	For the purpose of investigating the change of water resources in the lake area, it is necessary to detect and classify the natural and artificial waterbodies. Landsat multi-spectral remote sensing image data was used to extract water bodies through various waterbody extraction indices. Taking sensor category difference into account, determining the appropriate index for the sensor, and then automatically determining the extraction threshold using the histogram region segmentation method. In the thinking of object-oriented, the traditional feature engineering workflow is used to classify extracted water bodies based on the support vector machine algorithm to distinguish natural lake waterbodies from fishponds. Considering the multiple characteristics of water body objects in both spectral and geometrical aspects meantime. A curve characterizing indicates the difference between lake waterbodies and fishponds at the microscopic level was provided, and different feature combinations were introduced into the classifier for classification and accuracy evaluation. The result shows that this feature is superior to other features on Landsat images, and it is more adaptable to complex scenes. It provides the reference for determines the fundamental differences between natural and artificial features in geometric level so as to quantifying influencing factors such as human activities, and lays the foundation for subsequent research.
+	\end{enabstract}
+
+\tableofcontents
+
+\section{引言}
+\subsection{研究背景}
+水资源是一种重要的经济资源和战略资源，不仅是人类以及其他各种动植物生存的基础，还是维持自然界生态平衡与良性循环的关键因素。全球水资源丰富，约70\%的地球被海洋覆盖，然而淡水资源却十分稀缺，其仅占水资源总量的3\%，其中绝大部分位于南极洲冰层下，难以直接利用，地球上可为人类直接利用的淡水不到1\%，在小到区域，大到全球的范围内，如何对水资源实行合理高效监控一直是人们关心的热点问题，各国学者均对此高度重视，并从不同方面入手，提出了多样化的解决方案。
+
+通过发射遥感资源卫星实行对地观测是一种日渐成熟的方法，其中的代表有美国的陆地卫星计划(Landsat)，欧洲空间局的“全球环境与安全监测”计划等，我国也于1999年与巴西合作发射了ZY-01号卫星等，它具有覆盖范围广，周期性强等特点，适合进行大区域长时间序列的宏观变化研究。
+
+通过对地观测获取的遥感影像能够准确地表示水体所蕴含的光谱信息和纹理、边界、形状及拓扑关系等几何特性，在水体监测中具有明显的优势，因此利用遥感影像进行水体范围提取，对其进行量化分析，进而研究该区域水资源变化状况，已经得到了越来越多人的重视，从而探究如何进行高精度水体提取成为当前亟待解决的重点问题。
+
+湖北省是水资源非常丰富的一个内陆省，省内湖泊密布，有“千湖之省”的称号。本文选择湖北省内的洪湖、梁子湖和斧头湖为研究对象，借助Landsat卫星获取的遥感影像，进行湖泊水体提取和分类的研究。
+\subsection{国内外研究进展}
+在水体提取研究方面，国内外学者提出了不同的水体提取指标：1996年，McFeeters通过Landsat TM传感器的绿色波段和近红外波段组合形成归一化差异水体指标（Normalized Difference Water Index, NDWI) 来勾绘出水体特征\cite{Mcfeeters1996The}。但是NDWI无法区分构建物表面，因此，Xu(2006)给出了改进的归一化差异水体指标(Modified Normalized Difference Water Index, MNDWI)\cite{Hanqiu2006Modification},该指标的波段组合表达式和NDWI一样，不同的是中红外波段代替了近红外波段。该指标在各种遥感影像的水体识别中得到广泛的应用。
+
+2010年，Shen通过水体目标的如下规律“TM传感器绿色波段与红色波段之和大于TM近红外波段与中红外波段之和”给出了含水率指标(Water Ratio Index,WRI)\cite{Shen2010Water}。
+Feyisa(2014)给出了一种自动化水体提取指标(Automated Water Extraction Index, AWEI)\cite{Feyisa2014Automated}, 该指标通过最大化水与非水像素在不同波段之间的分离度来形成。
+
+近年来，国内外学者热衷于通过机器学习方法，利用遥感影像进行水资源的提取进而实现变化检测：在全球大范围尺度下，Pekel等人在2016年通过构建专家系统(Expert System)研究了近32年全世界水资源变化状况\cite{Pekel2016High}；而在小区域湖泊范围内：Rokni等人以伊朗乌尔米耶湖为研究对象，通过水体指标提取结合主成分分析(Principal Component Analysis,PCA)进行变化检测\cite{Rokni2014Water}；Han则利用传统的支持向量机(Support Vector Machine, SVM)分类方法，通过光谱特性对鄱阳湖湿地进行了长期的变化分析\cite{Han2015Four}；Deng通过定义规则的随机森林(Random Forest, RF)模型，采集水体进行提取指标变换后的特征，分析了武汉市周边湖泊多年的变化\cite{Deng2017Spatio}。除了对大面积湖泊水体进行提取外，Tran等人对越南陈文泰县湄公河三角洲的水产养殖场采用最大似然分类法进行提取并检测区域变化\cite{Tran2015Dynamics}；Ottinger则在对象级别考虑几何宏观特征对中国及越南的四个河口三角洲使用连通成分分割(Connected Component Segmentation)的方法分离出鱼塘\cite{Ottinger2017}。
+
+综上所述，国内外学者在提取水体时，研究范围覆盖面区域到全球，覆盖面广；研究对象广泛，湖泊和水产养殖场均有包括，更加贴合实际；研究方法多样，各种提取方法均有涉及，主要可以分为提取指标及机器学习两种方案，前者主要考虑水体反射电磁波得到的光谱信息所蕴含的物理特性，后者则是根据水体特征在特征空间的分布情况，从数学角度进行探测。在提取水体时像素和对象级均有涉猎，不仅考虑了水体的光谱特征，还考虑了对象级别蕴含的几何特征，并对
+之后进行进一步场景级别的研究具有积极意义。
+\subsection{研究内容}
+本文为了区分湖泊自然水体与鱼塘等人工水体，由于两者光谱相似无法进行像元级分类，因此采用面向对象的思想考虑光谱与几何两方面多种特征进行分类。首先基于Landsat多光谱卫星影像并考虑Landsat传感器的差异，采用多种水体提取指标进行水体提取确定每种传感器的最适提取指标，然后采用自动化水体分割方法确定提取阈值，然后对水体提取结果进行分类，最后根据分类结果研究确定表征湖泊自然水体与鱼塘的本质特性，为湖泊水资源变化检测工作提供一定的参考。
+\section{SVM的基本理论知识}
+支持向量机(Support Vector Machine, SVM)是机器学习中监督学习的一种方法，它可以在高维空间找到具有最大间隔的分割超平面，有效的完成数据点的分类。
+\subsection{基本形式及含义}
+给定一组训练样本$(x^{(i)},y^{(i)})$, 其中$i=1,2,\cdots,l$, $x\in\mathbb{R}^{n}$, $y\in\{1,-1\}^l$,解决如下优化问题
+\begin{alignat}{2}
+\min\limits_{\omega,b,\xi}\quad & \frac{1}{2}\omega^T\omega+C\sum_{i=1}^{l}\xi_i\\
+\text{s.t.}\quad & y^{(i)}(\omega^Tx^{(i)}+b) \geq 1-\xi_i,\quad i=1,\cdots,l\nonumber\\
+& \xi_i \geq 0,\quad i=1,\cdots,l\nonumber
+\end{alignat}
+
+
+$\omega$和$b$即为待求的分割超平面参数。
+
+$\xi_i \geq 0 $表明算法并未要求所有数据点到超平面的间隔大于等于1，即部分数据点的间隔可以小于1，但$C$的存在表明算法并不鼓励这种现象出现并会对系统酌情予以惩罚：若第$i$个数据点的$\xi_i > 0$，则系统会多付出$C\xi_i$的代价。
+\subsection{拉格朗日对偶}
+利用拉格朗日对偶可以解求上述优化问题。
+\subsubsection{广义拉格朗日乘数法}
+考虑如下不等式约束优化问题
+
+\begin{alignat}{2}
+\min\limits_x \quad & f(x) \\
+\text{s.t.} \quad & g_i(x) \leq 0 \quad i=1,\cdots,k\nonumber\\
+& h_i(x)=0 \quad i=1,\cdots,m\nonumber
+\end{alignat}
+
+
+构建广义拉格朗日函数
+\begin{equation}
+L(x,\alpha,\beta)=f(x)+\sum_{i=1}^{k}\alpha_{i}g_{i}(x)+\sum_{i=1}^{m}\beta_{i}h_{i}(x)
+\label{generalized_lag}
+\end{equation}
+其中$\alpha_{i}$和$\beta_{i}$为拉格朗日乘数,且$\alpha_{i}\geq 0$是因为上式可写为
+\begin{equation}
+\nabla f(x)+\sum_{i=1}^{k}\alpha_{i}\nabla g_{i}(x)+\sum_{i=1}^{m}\beta_{i}\nabla h_{i}(x)=0
+\end{equation}
+而$f(x)$与$g_{i}(x)$在$x$处的梯度相反,即$\nabla f(x)$与$\nabla g_{i}(x)$异号。
+\subsubsection{原始问题与对偶问题}
+易知，对于式\ref{generalized_lag}，有
+\begin{equation}
+\max\limits_{\alpha,\beta,\alpha_i\geq0} L(x,\alpha,\beta)=f(x)
+\end{equation}
+因为$x$满足约束条件时，可以发现$\sum_{i=1}^{k}\alpha_{i}g_{i}(x)+\sum_{i=1}^{m}\beta_{i}h_{i}(x) \leq 0$（后一项为0）,  因此$\alpha=\vec{0}$时$L(x,\alpha,\beta)$有最大值$f(x)$。
+
+将上述约束问题转化为无约束问题
+\begin{equation}
+\min\limits_{x}f(x)=\min\limits_{x}\max\limits_{\alpha,\beta,\alpha_i\geq0}L(x,\alpha,\beta)
+\label{min_max}
+\end{equation}
+称式\ref{min_max}为原始(Primal)问题，其最优解为$P^{*}=f(x^{*})$, $x^{*}$为对应的最优变量。
+
+将$\min$与$\max$调换顺序得到其对偶(Dual)问题为
+\begin{equation}
+\max\limits_{\alpha,\beta,\alpha_i\geq0}\min\limits_{x}L(x,\alpha,\beta)
+\end{equation}
+则其最优解为$D^{*}=\min\limits_{x}L(x,\alpha^{*},\beta^{*})$, $\alpha^{*},\beta^{*}$是对应的最优变量。
+\subsubsection{Slater条件与KKT条件}
+原始问题与对偶问题有如下关系：对于任意$\alpha,\beta$（其中$\alpha_{i} \geq 0$）都有:$D^{*} \leq P^{*}$, 证明过程如下：
+\begin{equation}
+\begin{aligned}
+\min\limits_{x}L(x,\alpha,\beta)& \leq L(x^{*},\alpha,\beta)\\
+&=f(x^{*})+\sum_{i=1}^{k}\alpha_{i}g_{i}(x^{*})+\sum_{i=1}^{m}\beta_{i}h_{i}(x^{*})\\
+& \leq f(x^{*})\\
+&=P^{*}
+\end{aligned}
+\end{equation}
+原式得证。
+
+在某些情况下，$D^{*}=P^{*}$，为此引入Slater条件。\\
+\textbf{Slater条件}：存在$x$使得$g_i(x),i=1,\cdots,k$严格可执行，即存在$x$满足所有的$g(x)<0$，并且$h_i,i=1,\cdots,m$为仿射函数。
+
+当原始问题为凸优化问题，且满足Slater条件时，强对偶性成立，从而$D^{*}=P^{*}$, 称Slater定理,即Slater条件是$D^{*}=P^{*}$的充分条件，此时
+\begin{equation}
+\begin{aligned}
+D^{*}&=\min\limits_{x}L(x,\alpha^{*},\beta^{*})\\
+& \leq L(x^{*},\alpha^{*},\beta^{*})\\
+& =f(x^{*})+\sum_{i=1}^{k}\alpha_{i}^{*}g_{i}(x^{*})+\sum_{i=1}^{m}\beta_{i}^{*}h_{i}(x^{*})\\
+& \leq f(x^{*})\\
+& =P^{*}
+\end{aligned}
+\end{equation}
+上述不等式应全部取等号，从而说明$x^{*}$是原始问题的解，同理$\alpha^{*},\beta^{*}$是对偶问题的解，此外$\sum_{i=1}^{k}\alpha_{i}^{*}g_{i}(x^{*})=0$，结合以上讨论，可以得到\textbf{(Karush-Kuhn-Tucker, KKT)条件}
+\begin{equation}
+\left\{
+\begin{array}{rl}
+\frac{\partial L(x^{*},\alpha^{*},\beta^{*})}{\partial x^{*}}&=0,\quad i=1,\cdots,n \\
+\frac{\partial L(x^{*},\alpha^{*},\beta^{*})}{\partial \beta_{i}^{*}}&=0,\quad i=1,\cdots,m \\
+\alpha_{i}^{*}g_{i}(x^{*})&=0,\quad i=1,\cdots,k \\
+g_{i}(x^{*}) & \leq 0,\quad i=1,\cdots,k \\
+h_{i}(x^{*}) & = 0,\quad i=1,\cdots,m \\
+\alpha^{*} & \geq 0,\quad i=1,\cdots,k \\
+\end{array}
+\right.
+\end{equation}
+可见KKT条件是$D^{*}=P^{*}$的必要条件，其中应注意$\alpha_{i}^{*}g_{i}(x^{*})=0$，因为
+\begin{equation}
+\alpha_{i}^{*}g_{i}(x^{*})=0 \Rightarrow \begin{dcases}
+g_i(x^{*}) < 0\quad \text{and}\quad \alpha_i^{*}=0,\quad i=1,\cdots,k\\
+g_i(x^{*}) =0 \quad \text{and} \quad \alpha_i^{*} \geq 0,\quad i=1,\cdots,k\\
+\end{dcases}
+\end{equation}
+它被称为KKT补充条件，上述性质将会用于SVM的推导中。
+\subsubsection{求解SVM}
+构建拉格朗日函数
+\begin{equation}
+L(\omega,b,\xi,\alpha,\beta)=\frac{1}{2}\omega^T\omega+C\sum_{i=1}^{l}\xi_i-\sum_{i=1}^{l}\alpha_{i}[y^{(i)}(\omega^Tx^{(i)}+b)-1+\xi_i]-\sum_{i=1}^{l}\beta_{i}\xi_i
+\label{SVM_lang}
+\end{equation}
+其中$\alpha,\beta$均为拉格朗日乘子，其中$\beta_{i}$此时表示不等式而非等式。
+其对偶问题为
+\begin{equation}
+\max\limits_{\alpha,\beta,\alpha_{i} \geq 0} \min\limits_{\omega,b,\xi}L(\omega,b,\xi,\alpha,\beta)
+\end{equation}
+事实上SVM具有强对偶性，因此根据KKT条件，可得
+\begin{equation}
+\begin{dcases}
+\frac{\partial L(\omega,b,\xi,\alpha,\beta)}{\partial \omega}=0\\
+\frac{\partial L(\omega,b,\xi,\alpha,\beta)}{\partial b}=0\\
+\frac{\partial L(\omega,b,\xi,\alpha,\beta)}{\partial \xi_i}=0\\
+\end{dcases}
+\end{equation}
+
+解得
+\begin{equation}
+\begin{dcases}
+\omega=\sum_{i=1}^{l} \alpha_{i}y^{(i)}x^{(i)},\quad i=1,\cdots,l\\
+\sum_{i=1}^{l} \alpha_{i}y^{(i)}=0,\quad i=1,\cdots,l\\
+C=\alpha_{i}+\beta_{i},\quad i=1,\cdots,l\\
+\end{dcases}
+\end{equation}
+代入式\ref{SVM_lang}得
+\begin{equation}
+W(\alpha)=\sum_{i=1}^{l}\alpha_{i}-\frac{1}{2}\sum_{i=1}^{l}\sum_{j=1}^{l}y^{(i)}y^{(j)}\alpha_{i}\alpha_{j}<x^{(i)},x^{(j)}>
+\end{equation}
+其中$<x^{(i)},x^{(j)}>=x^{(i)^T}x^{(j)}$，因此原问题转换为
+\begin{alignat}{2}
+\max\limits_\alpha \quad &W(\alpha)\\
+\text{s.t.} \quad & 0 \leq \alpha_{i} \leq C,\quad i=1,\cdots,l\nonumber\\
+&\sum_{i=1}^{l} \alpha_{i}y^{(i)}=0\nonumber
+\end{alignat}
+
+\subsection{序列最小优化算法}
+\subsubsection{变量的更新}
+$W(\alpha)$是关于$\alpha_{i}, i=1,\cdots,l$的函数，序列最小优化算法(sequential minimal optimization, SMO)\cite{Platt1999Fast}一次选择两个变量进行优化，将其他变量看作常数，为方便起见，定义$K_{ij}=<x^{(i)},x^{(j)}>$，假设本次循环选择$\alpha_{r}$和$\alpha_{s}$进行优化，则问题变为
+\begin{equation}
+\begin{split}
+\max\limits_{\alpha} \quad &\zeta+\alpha_{r}+\alpha_{s}-\frac{1}{2}K_{rr}\alpha_{r}^{2}-\frac{1}{2}K_{ss}\alpha_{s}^{2}-y^{(r)}y^{(s)}K_{rs}\alpha_{r}\alpha_{s}-\\
+&y^{(r)}\alpha_{r}\sum_{\substack{1 \leq i \leq l \\ i\neq r\\i \neq s }}y^{(i)}\alpha_{i}K_{ir}-y^{(s)}\alpha_{s}\sum_{\substack{1 \leq i \leq l \\ i\neq r\\i \neq s }}y^{(i)}\alpha_{i}K_{is}
+\end{split}
+\end{equation}
+\[
+\text{s.t.} \quad  0 \leq \alpha_{i} \leq C,\quad i=1,\cdots,l
+\]
+\[
+\sum_{i=1}^{l} \alpha_{i}y^{(i)}=0
+\]
+其中$\zeta$为常数。
+
+根据约束条件可知
+\begin{equation}
+\alpha_{r}=\frac{-\sum\limits_{\substack{1 \leq i \leq l\\i \neq r\\i \neq s}}\alpha_{i}y^{(i)}-\alpha_{s}y^{(s)}}{y^{(r)}}
+\end{equation}
+为方便起见，改写为
+\begin{equation}
+\alpha_{r}=\frac{Z-\alpha_{s}y^{(s)}}{y^{(r)}}
+\end{equation}
+其中$Z$是常数。
+假设上一轮迭代后两变量分别为$\alpha_{r}^{old},\alpha_{s}^{old}$，本轮完成后两变量为$\alpha_{r}^{new},\alpha_{s}^{new}$，则有
+\begin{equation}
+\alpha_{r}^{old}y^{(r)}+\alpha_{s}^{old}y^{(s)}=\alpha_{r}^{new}y^{(r)}+\alpha_{s}^{new}y^{(s)}=Z
+\end{equation}
+此外，存在方形约束：$\alpha_{r} \in [0,C],\alpha_{s} \in [0,C]$，若以$\alpha_{s}$作为研究变量，假设$y^{(r)}=1$，易知$\alpha_{s}$在斜率为1的直线上，且服从方形约束，设$L \leq \alpha \leq U$，则:
+\begin{itemize}
+\item   $y^{(r)} = y^{(s)}$时
+\begin{equation}
+\begin{dcases}
+L=\max(0,-C+Z)=\max(0,-C+\alpha_{r}^{old}+\alpha_{s}^{old})\\
+U=\min(C,Z)=\min(C,\alpha_{r}^{old}+\alpha_{s}^{old})
+\end{dcases}
+\end{equation}
+\item   $y^{(r)} \neq y^{(s)}$时
+\begin{equation}
+\begin{dcases}
+L=\max(0,-Z)=\max(0,\alpha_{s}^{old}-\alpha_{r}^{old})\\
+U=\min(C,C-Z)=\min(C,C+\alpha_{s}^{old}-\alpha_{r}^{old})
+\end{dcases}
+\end{equation}
+\end{itemize}
+将$\alpha_{r}$代入$W(\alpha)$中，得到$\alpha_{s}$的一元二次方程，对其求导得到的结果用$\alpha_{s}^{new\_pre}$来表示，则本轮完成后最终结果为
+\begin{equation}
+\alpha_{s}^{new}=
+\begin{dcases}
+L \quad &\alpha_{s}^{new\_pre}<L\\
+\alpha_{s}^{new\_pre} \quad&L \leq \alpha_{s}^{new\_pre} \leq U\\
+U \quad&\alpha_{s}^{new\_pre}>U
+\end{dcases}
+\end{equation}
+而求导解得
+\begin{equation}
+\alpha_{s}^{new\_pre}=\alpha_{s}^{old}+\frac{y^{(s)}(E_{s}-E_{r})}{K_{rr}+K_{ss}-2K_{rs}}
+\end{equation}
+其中E表示预测结果与实际值的误差
+\begin{equation}
+E_i=f(x^{(i)})-y^{(i)}=\sum_{j=1}^{l}\alpha_{j}y^{(j)}K_{ji}+b-y^{(i)}
+\end{equation}
+另外
+\begin{equation}
+\alpha_{r}^{new}=\alpha_{r}^{old}+y^{(r)}y^{(s)}(\alpha_{s}^{old}-\alpha_{s}^{new})
+\end{equation}
+根据以上过程即可获得变量的新一轮值。
+\subsubsection{变量的选择}
+根据KKT条件，有
+\begin{equation}
+\begin{dcases}
+y^{(i)}(\omega^Tx^{(i)}+b)-1+\xi_i \geq 0,\quad i=1,\cdots,l\\
+\alpha_{i}[y^{(i)}(\omega^Tx^{(i)}+b)-1+\xi_i]=0,\quad i=1,\cdots,l\\
+\beta_{i}\xi_i=0,\quad i=1,\cdots,l\\
+C=\alpha_{i}+\beta_{i},\quad i=1,\cdots,l\\
+\end{dcases}
+\end{equation}
+从而可以得到以下情形
+\begin{equation}
+\begin{dcases}
+\alpha_{i}=0 & \Rightarrow y^{(i)}(\omega^Tx^{(i)}+b)\leq 1\\
+0<\alpha_{i}<C & \Rightarrow y^{(i)}(\omega^Tx^{(i)}+b)=1\\
+\alpha_{i}=C & \Rightarrow y^{(i)}(\omega^Tx^{(i)}+b)\leq 1
+\end{dcases}
+\end{equation}
+第一个变量选择违反KKT条件最严重的样本点，首先选择违反$0<\alpha_{i}<C \Rightarrow y^{(i)}(\omega^Tx^{(i)}+b)=1$条件的点，如果这些点都满足KKT条件的话，再选择违反另外两个条件的点；
+第二个变量的选择标准则是使得$|E_{r}-E_{s}|$最大。
+
+有时按照上述变量选择方式不能够使得目标函数值有足够的上升，这时按下述步骤:
+首先遍历支持向量点集合选择第二个变量， 
+如果支持向量集上所有的$\alpha_{s}$均不能使目标函数上升，则在整个样本集上选择第二个变量， 
+如果整个样本集依然不满足，则重新选择第一个变量。
+\subsubsection{b的更新}
+在每轮更新完两个变量后，需要更新$b$\cite{李航2012统计学习方法}，因为$b$通过影响$f(x)$进而影响$E$的计算。
+当$0<\alpha_{r}<C$时，有
+\begin{equation}
+y^{(r)}(\omega^Tx^{(r)}+b)=1 \Rightarrow b_{r}^{new}=y^{(r)}-\sum_{\substack{1 \leq i \leq l \\ i\neq r\\i \neq s }}y^{(i)}\alpha_{i}K_{ir}-\alpha_{r}^{new}y^{(r)}K_{rr}-\alpha_{s}^{new}y^{(s)}K_{sr}
+\end{equation}
+而
+\begin{equation}
+E_{r}=f(x^{(r)})-y^{(r)}=\sum_{\substack{1 \leq i \leq l \\ i\neq r\\i \neq s }}y^{(i)}\alpha_{i}K_{ir}+\alpha_{r}^{old}y^{(r)}K_{rr}+\alpha_{s}^{old}y^{(s)}K_{sr}+b^{old}-y^{(r)}
+\end{equation}
+两式相减，得
+\begin{equation}
+b_r^{new}=-E_r+y^{(r)}K_{rr}(\alpha_{r}^{old}-\alpha_{r}^{new})+y^{(s)}K_{sr}(\alpha_{s}^{old}-\alpha_{s}^{new})+b^{old}
+\end{equation}
+同理,若$0<\alpha_{s}<C$
+\begin{equation}
+b_s^{new}=-E_s+y^{(r)}K_{rs}(\alpha_{r}^{old}-\alpha_{r}^{new})+y^{(s)}K_{ss}(\alpha_{s}^{old}-\alpha_{s}^{new})+b^{old}
+\end{equation}
+如果$0<\alpha_{i}^{new}<C,i\in\{r,s\}$，则$b_r^{new}=b_s^{new}$，如果$\alpha_{i}^{new}\in\{0,C\},i\in\{r,s\}$，此时可以选择中点作为更新值，因此
+\begin{equation}
+b^{new}=\frac{b_{r}^{new}+b_{s}^{new}}{2}
+\end{equation}
+并更新对应的$E$
+\begin{equation}
+E_{i}^{new}=\sum_Qy^{(j)}\alpha_{j}K(x^{(j)},x^{(i)})+b^{new}-y^{(i)},\quad i\in\{r,s\}
+\end{equation}
+$Q$是所有支持向量$x^{(j)}$的集合。
+\subsection{核方法}
+注意到$W(\alpha)$及预测函数$f(x_i)$其中的$<x^{(i)},x^{(j)}>$可以用$K(x^{(i)},x^{(j)})$来表示，$K(x^{(i)},x^{(j)})=\phi(x^{(i)})\phi(x^{(j)})$，$\phi$是映射函数，其将能低维空间中的数据映射到高维空间，从而使得低维空间非线性可分的数据在高维空间变得线性可分，$K(x^{(i)},x^{(j)})$是核函数。
+
+通常直接通过核函数直接计算$K(x,y)$，而不是通过计算映射函数再计算乘积，因为后者计算量较大，例如$K(x,y)=(x^Ty)^2$，当$n=2$时，其对应的映射函数$\phi(x)$为
+\begin{equation}
+\phi(x)=
+\left[\begin{array}{c}
+x_1x_1\\
+x_1x_2\\
+x_2x_1\\
+x_2x_2
+\end{array}
+\right]
+\end{equation}
+通过计算$\phi(x),\phi(y)$来计算$K(x,y)$，需要的时间复杂度为$O(n^2)$，而直接计算$K(x,y)$则为$O(n)$。事实上通过核函数可以直接在低维空间计算得到高维空间的结果，即SVM分类器的学习是在高维空间进行的，但是不需要显式的定义高维空间及映射函数，也就避免了从低维映射到高维过程中进行大量的计算，这样的方法叫核方法。
+
+核函数有线性核、多项式核、高斯核等多种核函数，本文采用高斯核函数，其基本形式如下
+\begin{equation}
+K(x,y)=\exp(\frac{-||x-y||^2}{2\sigma^2})
+\end{equation}
+高斯核函数可以处理非线性的情况，参数较多项式核更少，模型较简单，因为取值在$[0,1]$，相比多项式核更方便计算。
+高斯核函数可以将数据映射到无穷维，因为
+\begin{equation}
+\begin{aligned}
+K(x,y)&=\exp(\frac{-||x-y||^2}{2\sigma^2})\\
+&=\exp(-\frac{x^2}{2\sigma^2})\exp(-\frac{y^2}{2\sigma^2})\exp(\frac{2xy}{2\sigma^2})\\
+&=\exp(-\frac{x^2}{2\sigma^2})\exp(-\frac{y^2}{2\sigma^2})(1+\frac{xy}{\sigma^2}+\frac{(\frac{xy}{\sigma^2})^2}{2!}+\cdots+\frac{(\frac{xy}{\sigma^2})^n}{n!})\\
+&=\exp(-\frac{x^2}{2\sigma^2})\exp(-\frac{y^2}{2\sigma^2})\sum_{i=0}^{\infty}\frac{(\frac{xy}{\sigma^2})^i}{i!}\\
+&=\sum_{i=0}^{\infty}\exp(-\frac{x^2}{2\sigma^2})\exp(-\frac{y^2}{2\sigma^2})\sqrt{\frac{1}{i!\sigma^{2i}}}\sqrt{\frac{1}{i!\sigma^{2i}}}x^i y^i\\
+&=\phi(x)\phi(y)
+\end{aligned}
+\end{equation}
+可得
+\begin{equation}
+\phi(x)=\exp(-\frac{x^2}{2\sigma^2})
+\left[\begin{array}{c}
+1\\
+\sqrt{\frac{1}{\sigma^2}}x\\
+\sqrt{\frac{1}{2!\sigma^4}}x^2\\
+\cdots\\
+\sqrt{\frac{1}{n!\sigma^{2n}}}x^n
+\end{array}
+\right]
+\end{equation}
+可见映射到的高维空间是无限维的。
+\section{基于SVM的湖泊水体分类方法}
+首先对影像进行预处理操作，接下来进行水体提取，最后对提取出的水体进行分类。
+\subsection{预处理过程}
+预处理流程如图\ref{yuchuliliucheng}
+\begin{figure}[htbp]
+\centering
+\includegraphics{./figure/yuchuliliucheng.pdf}
+\caption{预处理流程图}
+\label{yuchuliliucheng}
+\end{figure}
+
+首先对所有影像进行辐射定标和大气校正，这些操作利用ENVI软件完成，观察发现Landsat影像几何精度较高，图像之间相对误差在1个像素以内，因而无需对其进行几何校正。然后对影像进行裁切获得研究区域图像后进行屏幕矢量化得到参考图shapefile文件，其中批量裁剪利用IDL完成。接下来构建水体参考图：通过构建矢量化面要素的缓冲区进行裁剪，以减少湖泊周边水体对确定指标最佳提取阈值的影响。
+
+获得水体参考图时按照以下步骤来进行：首先对影像进行屏幕数字化作为参考结果，将矢量化结果进行缓冲区分析，假设陆地像元延伸超过三个像素便认为是陆地，考虑到Landsat影像的30米分辨率，因此缓冲区半径设为100米（对于MSS传感器影像缓冲区半径设为200米），然后得到新的面要素，然后将此要素作为掩膜对影像进行裁剪，尽可能排除湖泊周围其他水体，削减其在确定阈值时造成的影响，同时又保留湖泊周围的部分陆地，以便检核阈值提取的效果，从而确定提取阈值。
+
+由于受到传感器因素或者环境噪声等误差影响，提取出的水体可能会含有空洞或者水体之间的陆地部分作为混合像元也被提取出来，因此可以进行形态学开闭运算等图像增强处理，可以有效的填补空洞，消除混合像元的影响，减少这些非提取指标因素对精度评定带来的误差。
+\subsection{水体提取}
+在预处理完成后，首先通过提取水体，将湖泊自然水体和鱼塘等人工水体一并得到，然后再完成水体的分类，整个过程如图\ref{tiqufenleiliucheng}
+\begin{figure}[htbp]
+	\centering
+	\includegraphics{./figure/tiqufenleiliucheng.pdf}
+	\caption{提取分类流程图}
+	\label{tiqufenleiliucheng}
+\end{figure}
+
+由于不同传感器波长范围及个数不同，不同的传感器应有不同的提取指标及阈值，本文考虑了归一化差分水体指数(NDWI)，改进的归一化差分水体指数(MNDWI)，归一化差分水汽指数(NDMI)\cite{Wilson2002Detection}，含水率指数(WRI)，归一化差分植被指数(NDVI)\cite{Rouse1974Monitoring}以及自动化水体提取指数(AWEI)，相关指标信息见表\ref{index_inf}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{采用的水体提取指数}
+	\begin{tabular}{ccc}
+		\toprule
+		指数种类	& 计算公式 & 提取标志\\ \midrule
+		NDWI&\tabincell{c}{(G-NIR)/(G+NIR)}&水大于阈值\\ 
+		NDMI&\tabincell{c}{(NIR-MIR)/(NIR+MIR)}&水大于阈值\\
+		MNDWI&\tabincell{c}{(G-MIR)/(G+MIR)}&水大于阈值\\
+		WRI&\tabincell{c}{(G+R)/(NIR+MIR)}&水大于1\\
+		NDVI&\tabincell{c}{(NIR-R)/(NIR+R)}&水小于阈值\\
+		\tabincell{c}{AWEI}&\tabincell{c}{4$\times$(G-MIR)-\\(0.25$\times$ NIR+2.75$\times$SWIR)}&\tabincell{c}{水大于阈值}
+		\\ \bottomrule
+	\end{tabular}
+	\label{index_inf}
+	\vspace{0.5em}
+\end{table}
+
+水体提取采用先手动后自动的思想，先手动确定最适提取指标，再自动确定最佳提取阈值：挑选出洪湖地区四幅不同传感器影像，由于冬季（10月-次年3月）湖面植被覆盖少，更有利于水体提取检测，因此选择冬季影像，同时也顾及到洪水等特殊年份，所选影像见表\ref{data_inf}。先采用试错法手动确定较为合适的提取阈值：当用某指标阈值对裁剪后影像进行水体提取后，白色像元(即提取出水体)的个数与矢量化面要素所占面积对应的像元数越接近，即两者差的绝对值越接近于0，则认为该阈值对该指标越合适，重复操作，直到绝对值最小为止，此时的阈值为下一步精度评定时所采用，手动修改的阈值精确到三位小数。
+
+指标精度评定的方式为：首先将屏幕数字化的湖泊面要素转换为栅格图像，该图像只有两类，水体和背景，其大小）应与手动确定阈值时的影像大小相同，然后对参考图像和每种传感器各指标在手动确定的最佳阈值下提取的水体结果图像进行栅格运算，计算出混淆矩阵，从而得到总体精度和Kappa系数，确定对于各传感器的最适提取指标。
+
+采用直方图区域分割法\cite{贾永红2010数字图像处理}自动确定最适提取指标的最佳提取阈值：首先对各传感器影像计算其最适提取指数，然后像素值拉伸到0-255得到灰度图，然后统计各灰度级像素数，对于某值$t$，其将灰度值小于（小于等于）$t$与灰度值大于$t$的像素分为两类$k_1,k_2$，然后计算这$k_1,k_2$的类间与类内方差，则类间方差与类内方差之比最大时所对应的$T$即为该图像最适提取指标的最佳提取阈值，设$k_i$类有像素$n_i$个，其均值为$\mu_i$，方差为$\sigma_{i}^2$，则
+图像灰度平均值为
+\begin{equation}
+m=\frac{\mu_1n_1+\mu_2n_2}{n_1+n_2}
+\end{equation}
+而类内方差为
+\begin{equation}
+\sigma_W^2=n_1\sigma_1^2+n_2\sigma_2^2
+\end{equation}
+类间方差为
+\begin{equation}
+\sigma_B^2=n_1(\mu_1-m)^2+n_2(\mu_2-m)^2
+\end{equation}
+因此所求分割阈值为
+\begin{equation}
+T=\arg \max\frac{\sigma_B^2}{\sigma_W^2}
+\end{equation}
+
+图\ref{histogram}展示了某图像灰度级与频率（各灰度级像素数与该图像总像素数之比）、类间与类内方差之比以及该图像最适提取指标下的最佳提取阈值之间的关系
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{./figure/histogram.pdf}
+	\caption{频率、方差比与提取阈值的关系}
+	\label{histogram}
+\end{figure}
+
+图中横坐标是灰度级，其范围是0-255，蓝线表示是各灰度级的频率直方图，黑线则表示了类间与类内方差之比随阈值$t$变化的规律，$t$的范围也是0-255，为便于显示，由于灰度级频率与方差比数量级不同，将其乘以系数进行拉伸以便在0-1范围内给予显示，因此纵轴数值没有实际意义，但是其随灰度级的变化趋势则真实可信：上图显示，红色虚线代表的阈值正好位于直方图双峰之间的低谷，将直方图较好的分为两部分，此处也正是黑线处于最大值的位置，即说明将类间与类内方差比最大处作为阈值时水体提取的效果较好。
+\subsection{特征获取}
+在得到提取的水体二值图后，将其作为掩膜，便可得到原始影像对应位置的水体部分，该部分即包含了湖泊自然水体，也包含了鱼塘、水产养殖场等人工水体。考虑到这两种地物成块状分布，采用面向对象的的思想对这两种地物进行分类，将每一块作为一个对象进行考虑，通过计算对象的特征对对象进行分类。图\ref{lzh}展示了梁子湖原始影像（未裁剪），提取的水体以及对应于原始影像的水体区域，在获取特征之前，首先要对对象进行扫描更新处理。
+\begin{figure*}
+	\centering
+	\subfigure[原始影像]{
+	\includegraphics[width=0.3\textwidth,angle=180]{./figure/lzh_OLI.pdf}
+	}
+	\subfigure[提取的水体]{
+		\includegraphics[width=0.3\textwidth,angle=180]{./figure/lzh_split.pdf}
+	}
+	\subfigure[原始影像水体区域]{
+		\includegraphics[width=0.3\textwidth,angle=180]{./figure/lzh_extract.pdf}
+	}
+	\caption{原始影像及提取结果}
+	\label{lzh}
+\end{figure*}
+\subsubsection{对象扫描及更新}
+在得到提取的水体二值图后，进行如下操作：
+\begin{itemize}
+\item 填补空洞：由于得到的对象中含有空洞，空洞的存在会影响后续相关特征的获取，因此要使得对象边界像素的内部不得有空洞，空洞即背景像素，填补空洞即将各对象内边界内部的背景像素转化为前景像素。
+\item 标记对象：一幅二值图中可能含有多个连接成分，即多个对象，在对各对象填补空洞后，要将各对象进行标记，从1开始，1,2,3$\dots$直到所有对象均被标记为止，标号数等于对象的个数，例如如果一个对象被标记为10，则该对象所包含的全部像元值均为10。
+\item 对象边界提取：对各填补空洞后的图像进行操作，提取各对象边界的原理是：按像素扫描全图，如果一个像元不是背景像元且其领域（4领域或8领域，本次采用4领域）内至少有一个背景像元，则该像元是边界像元。
+\item 标记各对象的边界：对进行对象边界提取后的图像进行操作，标记方法同第二步。
+\end{itemize}
+
+图\ref{duixiangsaomiao}展示了填补空洞、标记对象、对象边界提取以及标记对象边界后图像发生的变化
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.9\textwidth]{./figure/duixiangsaomiao.pdf}
+	\caption{对象扫描更新过程}
+	\label{duixiangsaomiao}
+\end{figure}
+\begin{itemize}
+\item(a)表示提取后得到的水体二值图，白色像素像元值为1，黑色为背景像素，像元值为0，图中有三个连接成分，即有三个对象。
+\item(b)是(a)填补空洞后的结果，可以看到，左上方对象边界像素内的两个背景像素被填充，像素值由0变成1。
+\item(c)是(b)标记对象后的结果，可以看到，图中的三个对象中的像素值被分别标记为1,2,3，为便于显示，用红、黄、蓝三种不同颜色表示不同的像元值，此时图像已不是黑白二值图。
+\item(d)是(b)进行对象边界提取的结果，由于左上方对象包含的两个像素各自的4领域均无背景像素，因此这两个像素不属于边界像素，像素值由1变为0，而其余白色像元均被判定为边界像素而保留下来。
+\item(e)由(d)进行对象标记后得到，标记过程与(b)->(c)相同，相当于对各对象的边界进行标记，并用红、黄、蓝三种不同颜色表示不同的像元值，此时图像也不是黑白二值图。
+\item(A-E)则显示了整个处理过程中图像像元值的变化。
+\end{itemize}
+
+在对图像中所有对象完成更新后，接下来获取对象的特征进而完成分类，对象的特征主要包括几何特征和光谱特征。
+\subsubsection{几何特征}
+几何特征即对象在几何方面的属性，本文考虑如下几种几何特征：
+\begin{itemize}
+\item 考虑对象的面积特征(以下简称“A”)：对象的面积可以用该对象所含有的像素个数来表示，由于在填补空洞以及将对象标记完后(图\ref{duixiangsaomiao}中(c))，在一幅图像中，每个对象都与一个标号唯一对应， 因此对象所含有的像元数即为对应标号的个数，因此统计每种标号的个数，即得到各个对象的面积。
+\item 考虑对象的周长特征(以下简称“P”)：对象的周长通过获取对象的边界来获取，即在填补空洞和对象边界提取并标记后(即图\ref{duixiangsaomiao}中(e))，因为每个对象边界都与一个标号唯一对应，据此便可求得对应于每个对象的周长。
+\item 考虑对象的紧凑性(Compactness C\&P2A\cite{Montero2009State},以下简称“ger”)：在求出每个对象的面积$A$和周长$P$后，根据以下两式
+\begin{equation}
+Compactness \quad C =\sqrt{\frac{4\pi A}{P^2}}
+\end{equation}
+\begin{equation}
+P2A=\frac{P^2}{A}
+\end{equation}
+即可得到相关特征量。
+\item 考虑对象的形状是否规则(以下简称“rec”)：观测影像发现，鱼塘及水产养殖场等人工水体一般形状规则，且多呈矩形，为此可以考虑对象与矩形的相似程度(矩形度，Rectangularity)
+\begin{equation}
+Rectangularity=\frac{A}{A_{rec}}
+\end{equation}
+$A$是对象的面积，而$A_{rec}$则是对象最小外接矩形的面积，易知，若对象形状越规则、越接近矩形，则对象的矩形度越大，且其范围为(0,1]。
+\item 考虑对象的弯曲程度(以下简称“cur”)：由于对象所代表的形状的弯曲情况通过该对象边界像素来表示，容易想到人工水体形状比较规则，而形状规则的对象其边界不弯曲的像素较多，对于自然水体，由于不受控制，则对象的形状比较随意，不规则，因此其边界不弯曲的像素较少，此处通过像素的曲率(Curvature)来表示像素处的弯曲程度，像素曲率的计算见图\ref{cur_frame}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.35\textwidth]{./figure/frame.pdf}
+\includegraphics[width=0.45\textwidth]{./figure/cur.pdf}	
+\caption{曲率计算示意图}
+\label{cur_frame}
+\end{figure}
+对于目标像元来说，其曲率根据3*3范围内，即其8领域内的像元（包括其自身）来确定：首先确定目标像元周围3*3范围内该对象的边界像元坐标（行列号），并将其平移到原点附近，然后根据这些坐标拟合出一条二次曲线来近似表示对象边界在该像元附近的形状，若曲线上下对称则将$x,y$坐标互换即可，然后根据曲率计算公式
+\begin{equation}
+K=\frac{|y^{''}|}{(1+y^{'2})^{\frac{3}{2}}}
+\end{equation}
+即可得到曲线在原点处的曲率，即对象边界在该像元附近的弯曲程度。
+
+上图显示了某一对象的边界，包括黄、红及蓝三种颜色像元，其中黄色像元是要计算的目标像元，红色像元是以黄色像元为中心，在黄色像元8领域内的像元，蓝色像元则是黄色像元8领域之外的像元。首先确定黄色像元周围3*3范围内的对象边界像元坐标，在将这些坐标平移到原点附近后，(0,0)表示黄色像元坐标值，红色像元坐标值分别用(-1,0)与(1,1)来表示，然后根据这三个坐标拟合出一条抛物线，如右图所示，蓝线是拟合出的曲线，红线则是蓝线在原点处的切线，可以看到蓝线在$x=0$处不与切线重合，说明曲线在原点处曲率不为0，然后根据曲率公式即可得到曲线在$x=0$处的曲率，此即该对象边界中黄色像元处曲率，它表示了该边界在黄色像元处的弯曲状况。
+
+在求得每个对象边界中各像元曲率后，以曲率为0的像元数占该对象边界总像元数的比例作为衡量对象形状是否规则的特征，易知，人工水体形状规则，该比例较大，而湖泊等自然水体形状不规则，对应对象形状复杂，则该比例相比鱼塘等人工水体应较小，从而将自然水体与人工水体区分开。
+\end{itemize}
+\subsubsection{光谱信息}
+\begin{itemize}
+\item 光谱一致性分析\cite{Han2015Four}
+
+考虑到不同传感器的差异，在利用光谱特征进行分类时，应先进行一致性检验，并将在不同传感器采集到的样本及待分类数据所含有的光谱信息均转换为同一种传感器，其中利用基于OLI传感器的分类器来分类所有OLI影像是比较可行的方法，因此进行OLI和其它传感器之间的差异校正。首先是在相近的时间（12月-1月）选择影像，如果是长期稳定不变的地物目标则其在不同影像的光谱信息的变化应该差异较小。
+一致性分析过程如下
+\begin{itemize}
+\item[-] 从泥地、沙地、水和植被中各自选择在同一地点长期未发生改变的目标。
+\item[-] 为了减少噪声或者大气带来的影响，以这些目标为中心在Landsat各传感器对应的所有波段均计算一个5*5小窗口（150*150m，MSS为3*3）的平均反射率。
+\item[-] 以OLI影像的反射率作为参考，建立OLI与其它传感器影像反射率之间的线性关系。用四个点来确定每个波段的这个线性关系，这四个点是根据四个类别得到的OLI-MSS/TM/ETM反射率对,得到线性关系如图\ref{sensor_consis}
+\begin{figure*}
+	\centering
+	\subfigure[MSS-OLI]{
+		\includegraphics[width=0.25\textwidth,angle=-90]{./figure/mss_oli.pdf}
+	}
+	\subfigure[TM-OLI]{
+		\includegraphics[width=0.25\textwidth,angle=-90]{./figure/tm_oli.pdf}
+	}
+	\subfigure[ETM-OLI]{
+		\includegraphics[width=0.25\textwidth,angle=-90]{./figure/etm_oli.pdf}
+	}
+	\caption{光谱一致性结果}
+	\label{sensor_consis}
+\end{figure*}
+\end{itemize}
+根据图\ref{sensor_consis}可以得到以下结论：
+\begin{itemize}
+\item [*] TM影像与OLI影像在相同波段对相同地物的反射率存在高相关性，即使在表现最差的短波近红外波段，两者的相关系数也达到了0.925，而在绿色波段更是达到了0.999的相关性，更是可以肯定两者之间存在线性关系，因此可以通过简单的线性变换将TM影像的反射率转换成OLI影像的反射率，达到传感器一致性的目的。
+\item [*] ETM+影像与OLI影像在相同波段对相同地物的反射率存在明显的正相关，在蓝色波段两种传感器反射率相关性最小，略低于0.9，而其他波段的相关性均大于0.9，呈现出高相关性，因此可以利用ETM+影像的反射率，通过线性变换来大致估计OLI影像的反射率水平。
+\item [*] MSS影像与OLI影像在波长存在重叠部分的三个波段上对相同地物的反射率存在线性响应关系，所有波段的相关系数均大于0.9，呈现出高相关性，因此采用同样的方法，可以将MSS数据调整成OLI传感器影像的反射率。
+\end{itemize}
+由此可以分别拟合出三条直线，从而实现MSS/TM/ETM-OLI之间的光谱数据转换。
+\item 光谱特征(以下简称“Spec”)
+
+考虑到对象的光谱信息，应尽可能减少其他因素影响，在冬季影像上(12月-1月)采集样本及分类，此时湖泊水体由于受人类影响较小，植被覆盖较少，且水体像元分布，因此光谱信息更集中，而人工水体例如鱼塘、水产养殖场，由于养殖生物种类不同，以及不同鱼塘水深差异或者由于鱼塘水体与旁边的陆地错乱分布，而分辨率较低，还会导致混合像元的产生，因此人工水体的光谱相较自然水体更复杂，分布更散乱，内部差异较大。因此，利用对象对应于原始影像的水块所包含像素各波段光谱的均值(以下简称“E”)与方差(以下简称“Var”)，描述对象内部光谱的分布情况，作为对象的光谱特征。
+\end{itemize}
+\subsection{SVM分类}
+\subsubsection{特征归一化与参数调节}
+获取到各对象的光谱特征与几何特征后，进行SVM分类，最后根据混淆矩阵(Error Matrix)评定分类精度。
+SVM分类采用C-SVC模型，核函数则是采用高斯核函数。在训练模型时需要进行特征归一化及调参。
+
+特征归一化采用线性归一化方法，只有将特征值均缩放到相同的区间内，例如对第$i$个样本的第$j$个特征$x_j^{(i)}$,需要归一化到[l,u]范围内，公式如下：
+\begin{equation}
+x_{ij}^{norm}=l+(u-l)\frac{x_j^{(i)}-\min x_{:j}}{\max x_{:j}-\min x_{:j}}
+\end{equation}
+$x_{:j}$是所有对象第$j$个属性值组成的向量。
+
+调参则是主要确定模型中的系数$C$和$\gamma$：$C$是惩罚系数，是对误差的宽容度，是样本错误与分类刚性延伸之间的平衡，$C$越大，越不容易出现误差，但是容易过拟合，$C$越小，则越容易欠拟合，因此不管$C$过大还是过小，均会出现泛化能力差的情形；而
+\begin{equation}
+\gamma=\frac{1}{2\sigma^2}
+\end{equation}
+其决定了数据隐射到新的特征空间中的分布，其值与支持向量的个数相关，还会影响每个向量对应的高斯分布的作用范围：$\gamma$越小，高斯分布作用于支持向量样本附近，其对已存在的样本预测准确率很高，对其它数据分类效果较差，即容易达到过拟合，缺乏泛化能力。如果$\gamma$较大，则高斯分布作用范围较广，然而其平滑效应也较大，其对所有样本均不能达到高分类准确率，此时则为欠拟合状态。因此$C$和$\gamma$的选取情况，决定了SVM分类效果的优劣。
+
+确定$C$和$\gamma$主要通过网格搜索法来实现，可以通过调用LIBSVM中的grid.py函数计算得到。
+分类完成后，得到各对象的预测标记，然后通过二值图中对象的标号与水体影像中各水块的关系，得到水体影像的二分类结果图。
+\subsubsection{特征组合}
+在进行归一化及调参后，进行SVM分类，将不同组合的特征输入分类器中，通过观察各组分类效果来对每种特征进行评价。除了将特征分为光谱特征与几何特征两个角度外，对上述对象几何特征继续剖分，首先可以分为基础特征与进阶特征，而在进阶特征中，又包括了宏观进阶特征与微观进阶特征，将这些不同级别的特征进行组合利用SVM分类器进行分类，本文采用纯光谱(Spec),面积+周长(P+A)，面积周长+光谱(Spec+P+A)，面积周长+紧凑性(P+A+ger)，面积周长+规则性(P+A+rec)，面积周长+弯曲程度(P+A+cur)，各组合与所属类别关系如表\ref{feature_combine}
+\begin{table}[htbp]
+\small
+\centering
+\caption{特征组合关系表}
+\begin{tabular}{ccccccccc}
+	\toprule
+	       & \multicolumn{2}{c}{Spec}& \multicolumn{6}{c}{Geo}\\ 
+	       \cmidrule(lr){2-3} \cmidrule(lr){4-9}
+	       &   &   & \multicolumn{2}{c}{Basic}&\multicolumn{4}{c}{Advanced}\\ 
+	       \cmidrule(lr){4-5} \cmidrule(lr){6-9}
+	       &   &   &   &   & \multicolumn{3}{c}{Macro}&Micro\\
+	       \cmidrule(lr){6-8} \cmidrule(lr){9-9}
+           & E &Var	&P &A &P2A &Compactness C &rec &cur \\ \midrule
+	   Spec&$\surd$&$\surd$&   &   &   &    & &\\
+	    P+A&	&		& $\surd$ & $\surd$   &   &  &    &\\
+	Spec+P+A&$\surd$&$\surd$& $\surd$ & $\surd$   &   &  &    &\\
+	P+A+ger&	&		& $\surd$ & $\surd$   &$\surd$&$\surd$&    &\\
+	P+A+rec&	&		& $\surd$ & $\surd$   &   &  &$\surd$     &\\
+	P+A+cur&	&		& $\surd$ & $\surd$   &   &  &    &$\surd$ \\ \bottomrule
+\end{tabular}
+\label{feature_combine}
+\end{table}
+\section{实验及结果分析}
+\subsection{实验概况}
+\subsubsection{所用影像}
+本次实验采用Landsat卫星影像，所用影像卫星及相应传感器信息见表\ref{sensor_inf},
+\begin{table}[p]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}} 
+	\centering
+	\caption{实验数据}
+	\begin{tabular}{cccc}
+		\toprule
+		传感器& 分辨率(m) & 波长(μm) &本文简称\\ \midrule
+MSS  &60&\tabincell{c}{Band 4：0.500-0.600\\
+      	Band 5：0.600-0.700\\Band 6：0.700-0.800\\Band 7：0.800-1.100}&\tabincell{c}{G\\R\\NIR-1\\NIR-2}\\ \cmidrule{1-4}
+        TM   &30&\tabincell{c}{Band 1：0.450-0.520\\Band 2：0.520-0.600\\
+      	Band 3：0.630-0.690\\Band 4：0.760-0.900\\Band 5：1.550-1.750\\Band 7：2.080-2.350}&\tabincell{c}{B\\G\\R\\NIR\\MIR\\SWIR}\\ \cmidrule{1-4}
+    	ETM+ &30&\tabincell{c}{Band 1：0.450-0.515\\Band 2：0.525-0.605\\
+     	Band 3：0.630-0.690\\Band 4：0.775-0.900\\Band 5：1.550-1.750\\Band 7：2.080-2.350}&\tabincell{c}{B\\G\\R\\NIR\\MIR\\SWIR}\\ \cmidrule{1-4}
+        OLI  &30&\tabincell{c}{Band 2：0.450-0.515\\Band 3：0.525-0.600\\
+     	Band 4：0.630-0.680\\Band 5：0.845-0.885\\Band 6：1.560-1.660\\Band 7：2.100-2.300}&\tabincell{c}{B\\G\\R\\NIR\\MIR\\SWIR}\\
+ 		\bottomrule
+	\end{tabular}
+	\label{sensor_inf}
+\end{table}
+实验数据信息见表\ref{data_inf}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}} 
+	\centering
+	\caption{实验数据}
+	\begin{tabular}{cccccc}
+		\toprule
+		卫星 	& 传感器 & 行列号 & 日期 	& 分辨率(m)&实验用途\\ \midrule
+		Landsat-1&  MSS&132/039 &1973.12.08&60&光谱一致性\\ 
+		Landsat-3&	MSS&133/039 &1983.02.08&60&指标提取\\
+		Landsat-5&	TM&	123/039	&1995.12.05&30&光谱一致性\\
+		Landsat-5&	TM&	123/039	&1998.10.26&30&指标提取\\
+		Landsat-5&	TM&	123/039	&2011.01.15&30&SVM分类(检验)\\
+		Landsat-7& ETM+&123/039 &1999.12.24&30&指标提取\\
+		Landsat-7& ETM+&123/039 &2001.01.11&30&光谱一致性\\
+		Landsat-8&	OLI&123/039 &2013.12.22&30&光谱一致性\\
+		Landsat-8&	OLI&123/039 &2014.01.23&30&SVM分类(训练)\\
+		Landsat-8&	OLI&122/039 &2015.01.03&30&SVM分类(检验)\\
+		Landsat-8&	OLI&123/039 &2015.03.31&30&\tabincell{c}{SVM分类(检验)\\指标提取}\\ \bottomrule
+	\end{tabular}
+	\label{data_inf}
+\end{table}
+
+以上数据均可从美国地质调查局(USGS)官网获得。
+\subsubsection{研究区概况}
+洪湖位于湖北省洪湖市和监利县之间，长江中游北岸，东荆河南侧，地处长江与东荆河间的洼地，是中国第七，湖北省第一大淡水湖。洪湖全湖呈几何多边形，湖岸平直，它东西长23.4km，南北宽20.8km。湖面面积约350$\text{km}^2$。洪湖属亚热带湿润季风气候，气候四季分明，光照充足，雨量充沛，温和湿润，境内生物资源丰富，水草茂盛，鱼虾丰富，是中国淡水鱼类的重要产地。沿湖四周鱼塘、水产养殖场分布密集。
+
+斧头湖位于北纬$\text{29}^\circ\text{56}'$-$\text{30}^\circ\text{07}'$，东经$\text{114}^\circ \text{10}'$-$\text{114}^\circ \text{15}'$，以其东北部的斧头山得名，地处嘉鱼、江夏、咸安三县交界处。斧头湖东西宽9km，南北长18km，湖面面积162.44$\text{km}^2$。该区域属亚热带季风气候，气候温和，降水充沛，日照充足，四季分明。斧头湖通过金水河与长江相通，是长江中下游一个典型的集渔业、灌溉、航运等多功能于一体的功能型湖泊，其生物资源极为丰富，是鱼类和野生生物的重要栖息地。
+
+梁子湖位于东经$\text{114}^\circ\text{31}'$-$\text{114}^\circ\text{42}'$，北纬$\text{30}^\circ \text{4}'$-$\text{30}^\circ \text{20}'$，地处长江中游南岸，是湖北省第二大淡水湖。梁子湖在常年平均水位时，面积225$\text{km}^2$，整个梁子湖按地理分布可划分为东梁子湖、西梁子湖、和牛山湖。其中牛山湖和东梁子湖被牛山大坝分隔，而东梁子湖和西梁子湖则交汇于梁子岛及其周边的岛屿群。梁子湖湖泊生态系统完整、物种丰富，十分适宜发展水产养殖，一直是重要的渔业基地,是蜚声中外的“武昌鱼”的故乡。牛山湖和西梁子湖是珍贵鱼类保护区、鱼虾产卵场，而东梁子湖则是一般鱼类保护区。
+
+本次实验以洪湖，斧头湖，梁子湖为研究对象，研究区域如图\ref{yanjiuquyu}所示
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{./figure/yanjiuquyu.pdf}	
+	\caption{研究区域所在位置}
+	\label{yanjiuquyu}
+\end{figure}
+其中(a)是手动提取确定指标时所用的洪湖区域影像，(b)(c)则分别是进行水体分类时的斧头湖 南部地区研究区域及西梁子湖地区研究区域。
+\subsubsection{训练集情况}
+此次SVM分类的训练集是利用ENVI软件通过在原始影像上选取若干ROI，并记录ROI所覆盖的所有像素坐标，然后将像素坐标与进行水体提取后得到的二值图作为掩膜得到的原始影像水体区域各对象进行对应，对应原则为：若ROI覆盖的坐标属于某一对象，则该对象被纳入训练集，一个ROI可以标记多个对象。最终得到276个对象作为训练集，其中有12个为自然水体对象，另外264个为鱼塘等人工水体对象。
+\subsubsection{LIBSVM}
+LIBSVM是由台湾大学林志仁教授开发的实现专门用来实习SVM算法流程的程序库，包括数据读取、模型构建、结果预测、数据输出等步骤。本文借助LIBSVM在MATLAB的接口，对遥感影像数据实现批量分类。有关LIBSVM，请查询\url{https://www.csie.ntu.edu.tw/~cjlin/libsvm/}。
+\subsection{实验结果}
+\subsubsection{水体提取结果}
+\begin{figure*}[htbp]
+	\centering
+	\subfigure[原始影像]{
+		\begin{minipage}[t]{0.2\textwidth}
+			\includegraphics[width=1\textwidth]{./figure/lzh_origin_dist.pdf}
+			\includegraphics[width=1\textwidth]{./figure/fth_origin_dist.pdf}
+		\end{minipage}
+	}
+	\subfigure[提取结果]{
+		\begin{minipage}[t]{0.2\textwidth}
+			\includegraphics[width=1\textwidth]{./figure/lzh_extract_dist.pdf}
+			\includegraphics[width=1\textwidth]{./figure/fth_extract_dist.pdf}
+		\end{minipage}
+	}
+	\caption{OLI传感器水体提取结果}
+	\label{tiqu_result}
+\end{figure*}
+图\ref{tiqu_result}展示了OLI传感器水体提取的结果，左图是分类区域的原始影像，以假彩色显示，其RGB通道分别对应NIR、R、G三个波段；右图中蓝色区域代表提取出的水体，包括湖泊自然水体及鱼塘。
+\subsubsection{SVM水体分类结果}
+图\ref{SVM_result}展示了在图\ref{yanjiuquyu}中的(c)研究区域选取的六个典型地区的考虑对象弯曲特性的分类结果，其中原始影像以假彩色显示，其RGB通道分别对应NIR、R、G三个波段，分类结果中深蓝色则代表湖泊等自然水体，青色则表示鱼塘等人工水体。
+\begin{figure*}[t]
+	\centering
+	\subfigure[区域1]{
+		\includegraphics[width=0.2\textwidth]{./figure/classify_result/1_origin.pdf}
+		\includegraphics[width=0.2\textwidth]{./figure/classify_result/1_classify.pdf}
+	}
+	\subfigure[区域2]{
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/2_origin.pdf}
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/2_classify.pdf}
+	}
+	\subfigure[区域3]{
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/3_origin.pdf}
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/3_classify.pdf}
+	}
+	\subfigure[区域4]{
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/4_origin.pdf}
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/4_classify.pdf}
+	}
+	\subfigure[区域5]{
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/5_origin.pdf}
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/5_classify.pdf}
+	}
+	\subfigure[区域6]{
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/error_origin.pdf}
+	\includegraphics[width=0.2\textwidth]{./figure/classify_result/error_classify.pdf}
+	}
+	\caption{SVM水体分类结果}
+	\label{SVM_result}
+\end{figure*}
+从图\ref{SVM_result}可以得到以下结论：
+
+(a)是梁子湖西南部一个被人为大规模改造成鱼塘的湖泊支流，从图中整齐划一，排列有序的划分方式可以识别出来，该区域有一块仅仅被拦了起来，还未改造成鱼塘，其仍具有湖泊自然水体的形态，因此其被分类成自然水体，而其他水块则被分类为鱼塘，山里边的水体由于面积较小，且提取出来后多为几个像元的简单组合，多具有规则形态，所以被分类为鱼塘。
+
+(b)是基本未经过改造的湖泊支流，可以看到水体呈现自然形态，相应的其被分类为自然水体，被分类为鱼塘的多为山中水体，图中左下角被人为分隔改造的水体则可以清晰的看到被分类为鱼塘。
+(c)是部分经过人为改造的湖泊支流，图中清晰的显示出人为分割湖泊的痕迹，其支流末梢多被分类为鱼塘，支流前部和被分类为水体是因为通过分割痕迹相距较远判断此处仅被分割基本未进行改造，且提取出的水体是隶属于一个对象，因此可以判定分类基本无误。
+
+(d)是梁子湖西北部已经过人为改造的支流区域，可以看出，该区域被改造后支流基本消失，鱼塘和湖泊水体基本已经隔离开，很容易分辨，分类结果也很好的说明了这一点。
+
+(e)是梁子湖研究区域最上方的支流，其亦隶属于西梁子湖，图中通过湖泊水体的规则边界也可以明显的看到裁剪影像的痕迹，该区域情况与(b)类似，但是人类因素略强于(b)，其分类结果图也很好的说明了这一点，此外，由于影像裁剪及提取使得对象边界较为规则，可以很明显看到上方两水体被分类为鱼塘，这也间接说明对象的边界信息确实对分类器的判断存在影响。
+
+(f)是西梁子湖东南部的一个地形复杂，且经过大规模人为改造后的区域，该区域集中显示了提取及分类存在的一些问题，将在后续的分析中继续讨论。
+\subsection{精度评价}
+\subsubsection{水体提取精度}
+Landsat各传感器手动选取最适提取指标的精度如表\ref{MSS}至\ref{OLI}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{MSS传感器各指标提取结果}
+	\begin{tabular}{ccccc}
+		\toprule
+		提取指数	& 最佳提取阈值 &\tabincell{c}{1983年洪湖影像\\提取出湖泊面积/$km^2$}&总体精度&Kappa系数 \\ \midrule
+		参考值 & --&198.864&	100.000\% &	1.000\\
+		NDWI &	-0.149&	198.925	&96.296\% &	0.923\\ 
+		NDVI &	+0.295&	198.680&	95.070\%&	0.897\\ \bottomrule
+	\end{tabular}
+	\label{MSS}
+\end{table}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{TM传感器各指标提取结果}
+	\begin{tabular}{ccccc}
+		\toprule
+		提取指数	& 最佳提取阈值 &\tabincell{c}{1998年洪湖影像\\提取出湖泊面积/$km^2$}&总体精度&Kappa系数 \\ \midrule
+		参考值	&--	&294.294&	100.000\%&	1.000\\
+		NDWI&	-0.341&	294.306&	97.437\%&	0.949\\
+		MNDWI&	+0.021&	294.277&	97.528\%&	0.951\\
+		AWEI&	+0.000&	281.473&	96.327\%&	0.927\\
+		NDVI&	+0.355&	294.311&	97.278\%&	0.946\\
+		WRI&	+0.662&	294.303&	97.489\%&	0.950\\
+		NDMI&	+0.155&	294.252&	94.925\%&	0.899\\ \bottomrule
+	\end{tabular}
+	\label{TM}
+\end{table}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{ETM传感器各指标提取结果}
+	\begin{tabular}{ccccc}
+		\toprule
+		提取指数	& 最佳提取阈值 &\tabincell{c}{1999年洪湖影像\\提取出湖泊面积/$km^2$}&总体精度&Kappa系数 \\ \midrule
+		参考值&	--&	297.039&	100.000\%&	1.000\\
+		NDWI&	-2.888&	297.038&95.518\%	&0.910\\
+		MNDWI&	-5.445&	297.041&95.462\%	&0.909\\
+		AWEI&	+0.000&	82.760	&62.465\%&	0.255\\
+		NDVI&	+1.823&	297.031	&95.459\%&	0.909\\
+		WRI&	-5.051&	297.039	&95.396\%&	0.908\\
+		NDMI&	-3.176&	297.034	&95.394\%&	0.908\\
+		 \bottomrule
+	\end{tabular}
+	\label{ETM}
+\end{table}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{OLI传感器各指标提取结果}
+	\begin{tabular}{ccccc}
+		\toprule
+		提取指数	& 最佳提取阈值 &\tabincell{c}{2015年洪湖影像\\提取出湖泊面积/$km^2$}&总体精度&Kappa系数 \\ \midrule
+		参考值&	--&	264.902&	100.000\%&	1.000\\
+		NDWI&	-0.339&	264.868&	96.806\%&	0.936\\
+		MNDWI&	+0.132&	264.902&	97.459\%&	0.949\\
+		AWEI&	+0.000&	261.989&	97.235\%&	0.944\\
+		NDVI&	+0.441&	264.924&	96.614\%&	0.932\\
+		WRI&	+0.668&	264.927&	97.092\%&	0.942\\
+		NDMI&	+0.244&	264.986&	96.139\%&	0.922\\
+		\bottomrule
+	\end{tabular}
+	\label{OLI}
+\end{table}
+从以上结果可以看出对于MSS传感器，采用NDWI提取指标效果较好，可以达到96.296\%的提取精度，而对于TM和OLI传感器来说，MNDWI则是最佳选择，分别达到了97.528\%和97.459\%的提取精度，kappa系数也保持在0.95左右，NDWI、AWEI、WRI也可以起到不错的效果，WRI更适合TM传感器影像水体的提取，NDWI次之，而对于OLI影像，采用AWEI指标可以起到良好的效果，WRI提取效果可以排在第三位，而对于这两种传感器影像，NDMI表现较差，水体提取效果均不如其它指标。
+对于ETM影像，除AWEI外各指标提取效果基本相同，而AWEI的提取效果则出现了断崖式下跌，仅有62.465\%的提取效果，kappa系数也仅有0.255。通过以上结果还发现相对于TM和OLI影像，ETM影像各指标最佳阈值波动较大。
+
+图\ref{tiquyuzhi}展示了ETM、TM、OLI三种传感器在上述六种水体提取指标下采用试错法确定的最佳阈值
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=0.7\textwidth]{./figure/tiquyuzhi.pdf}
+	\caption{人工确定的OLI，TM，ETM传感器各指标提取阈值}
+	\label{tiquyuzhi}
+\end{figure}
+由于ETM、TM、OLI传感器对应波段波长范围大致相同，因此地物光谱特征应相似才对，从而阈值应差异较小，然而图\ref{tiquyuzhi}表明ETM传感器各指标采用试错法确定提取阈值与OLI，TM传感器相差较大，因而推测ETM传感器或者影像可能存在一些问题，又因为MSS传感器影像分辨率过大，且其波段数目过少，为了减少多余变量，本次实验只采用TM与OLI两种影像来对分类方法进行精度检验。
+
+自动化提取阈值精度评定过程如下：
+随机生成1000个点，每个区域500个，进行通过同一点位在提取影像和参考影像的像元值进行图\ref{yanjiuquyu}中的区域(b)(c)水体提取的精度评定，参考影像则通过屏幕数字化高分辨率TH-1传感器影像获得。OLI传感器水体提取结果如表\ref{tiqu_jindu}所示，
+\begin{table}[htbp]
+	\small
+	\centering
+	\caption{水体自动提取精度评定结果}
+	\begin{tabular}{ccccc}
+		\toprule
+		研究区域 	& 总体精度 & 制图精度 & 用户精度 	& Kappa系数 \\ \midrule
+		梁子湖	&82.200\%   &   72.766\%     &  87.245\%  & 0.639\\
+		斧头湖	&95.400\%	&83.969\%	&98.214\%	&0.875\\
+		综合		&88.800\%	&76.776\%	&91.234\%	&0.750\\ \bottomrule
+	\end{tabular}
+	\label{tiqu_jindu}
+\end{table}
+表\ref{tiqu_jindu}显示，梁子湖研究区域的提取效果要明显好于斧头湖区域，对梁子湖区域进行水体提取的精度达到了95.4\%，用户精度则高达98.214\%，相对较低的是制图精度，但是也达到了83.969\%，推测因为某些水体过小，如山中广泛分布的私家鱼塘，可能有些面积还不够一个30m分辨率的像素，因此影像上根本不存在相应水体光谱信息或者混合像元中水体光谱特性很微弱，难以通过指标探测出来，致使提取时出现少提，漏提现象，从而制图精度有所下降。具有高符合度，达到0.875的Kappa系数也从侧面反映了梁子湖区域高质量的提取结果；斧头湖区域的提取效果与梁子湖相比较差，各方面提取指标与梁子湖相比均较低，总体精度超过80\%，用户精度尚可，达到了91\%，说明基本不存在错提现象，即把非水体当成水体提取出来。而制图精度只有76\%，分析一方面是由于时间差异，冬季参考影像上某些水体在该春季影像上具有植被使得鱼塘难以提取出来，或者人为因素鱼塘消失等等，也有水体较小无法识别出来等原因。斧头湖区域的Kappa系数达到了0.639，提取质量虽不如梁子湖区域，但是效果尚可，将两区域随机点结果进行综合评定后，总体精度接近90\%，用户精度达到91.234\%，由于上述原因的存在，综合制图精度在75\%左右，但是0.75的Kappa系数表明此次水体提取基本达成了提取水体的目的，水体提取符合度良好。
+\subsubsection{分类精度评定及分析}
+
+图\ref{oli_lzh}是2015年梁子湖研究区域OLI传感器影像分类结果
+\begin{figure*}[htbp]
+	\centering
+	\subfigure[Spec]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_oli/spec.pdf}
+	}
+	\subfigure[P+A]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_oli/PA.pdf}
+	}
+	\subfigure[Spec+P+A]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_oli/spec_PA.pdf}
+	}
+	\subfigure[P+A+ger]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_oli/PA_ger.pdf}
+	}
+	\subfigure[P+A+rec]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_oli/PA_rec.pdf}
+	}
+	\subfigure[P+A+cur]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_oli/PA_cur.pdf}
+	}
+	\caption{梁子湖区域OLI影像水体分类结果}
+	\label{oli_lzh}
+\end{figure*}
+
+图\ref{oli_fth}是2015年斧头湖研究区域OLI传感器影像分类结果
+\begin{figure*}[htbp]
+	\centering
+	\subfigure[Spec]{
+		\includegraphics[width=0.25\textwidth]{./figure/fth_oli/spec.pdf}
+	}
+	\subfigure[P+A]{
+		\includegraphics[width=0.25\textwidth]{./figure/fth_oli/PA.pdf}
+	}
+	\subfigure[Spec+P+A]{
+		\includegraphics[width=0.25\textwidth]{./figure/fth_oli/spec_PA.pdf}
+	}
+	\subfigure[P+A+ger]{
+		\includegraphics[width=0.25\textwidth]{./figure/fth_oli/PA_ger.pdf}
+	}
+	\subfigure[P+A+rec]{
+		\includegraphics[width=0.25\textwidth]{./figure/fth_oli/PA_rec.pdf}
+	}
+	\subfigure[P+A+cur]{
+		\includegraphics[width=0.25\textwidth]{./figure/fth_oli/PA_cur.pdf}
+	}
+	\caption{斧头湖区域OLI影像水体分类结果}
+	\label{oli_fth}
+\end{figure*}
+
+SVM分类精度评定过程如下：生成500个随机点，通过同一点位在提取影像和参考影像所处的的像元值进行图\ref{yanjiuquyu}中的区域(b)(c)水体提取的精度评定，参考影像获取方式与水体提取精度评定相同，OLI传感器精度评定结果见表\ref{oli_lzh_jindu}至\ref{oli_fth_jindu}
+\begin{table}[htbp]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{梁子湖区域OLI传感器影像分类精度}
+	\begin{tabular}{ccccccc}
+		\toprule
+			&  &\multicolumn{2}{c}{制图精度}&\multicolumn{2}{c}{用户精度} &\\ \midrule 
+		特征组合&总体精度  &湖泊水体    & 鱼塘  &湖泊水体&鱼塘&Kappa系数\\
+		spec&	91.818\%&	90.909\%&	100.000\%&	100.000\%&	55.000\%&	0.667\\
+		P+A&	90.000\%&	88.889\%&	100.000\%&	100.000\%&	50.000\%&	0.615\\
+		P+A+spec&	93.636\%&	96.970\%&	63.636\%&	96.000\%&	70.000\%&	0.632\\
+		P+A+ger&	97.273\%&	97.980\%&	90.909\%&	98.980\%&	83.333\%&	0.854\\
+		P+A+rec&	92.727\%&	91.919\%&	100.000\%&	100.000\%&	57.895\%&	0.695\\
+		P+A+cur&	97.273\%&	97.980\%&	90.909\%&	98.980\%&	83.333\%&0.854\\   \bottomrule
+	\end{tabular}
+	\label{oli_lzh_jindu}
+\end{table}
+\begin{table}[b]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{斧头湖区域OLI传感器影像分类精度}
+	\begin{tabular}{ccccccc}
+		\toprule
+		&  &\multicolumn{2}{c}{制图精度}&\multicolumn{2}{c}{用户精度} &\\ \midrule 
+		特征组合&总体精度  &湖泊水体    & 鱼塘  &湖泊水体&鱼塘&Kappa系数\\
+		spec&	36.842\%&	0.000\%&	100.000\%&	0.000\%&	36.842\%&	0.000\\
+		P+A&	81.871\%&	73.148\%&	96.825\%&	97.531\%&	67.778\%&	0.642\\
+		P+A+spec&	88.889\%&	88.889\%&	88.889\%&	93.204\%&	82.353\%&	0.765\\
+		P+A+ger&	71.345\%&	91.667\%&	36.508\%&	71.223\%&	71.875\%&	0.314\\
+		P+A+rec&	90.643\%&	87.963\%&	95.238\%&	96.939\%&	82.192\%&	0.805\\
+		P+A+cur&	85.380\%&	86.111\%&	84.127\%&	90.291\%&	77.941\%&	0.691\\
+		\bottomrule
+	\end{tabular}
+	\label{oli_fth_jindu}
+\end{table}
+下面以OLI传感器影像精度结果为例，通过不同特征组合并结合分类结果图进行分析：
+\begin{itemize}
+\item[(1)]只采用光谱特征，即对象中所包含的每个像元各波段均值及方差时：
+
+根据斧头湖分类结果，所有水体均被分类为鱼塘，总体精度只有36.842\%，湖泊水体制图精度和用户精度均为0\%，说明此特征并没有起到作用，即只凭借光谱信息无法对自然水体及人工鱼塘进行判断；而梁子湖虽然有对象被分类为自然水体，推测则是由于梁子湖较斧头湖区域受人类影响较小，湖水水质更接近自然状态，其光谱信息与符合自然水体，而斧头湖由于受人为干扰较大，水质与人工鱼塘更接近，即光谱特征与鱼塘相仿，换言之，在受人类影响较大的区域，仅通过光谱特征无法分辨出湖泊水体与鱼塘。
+\item[(2)]只采用面积与周长这种考虑对象大小的特征：
+
+通过分类结果可以看到，梁子湖及斧头湖区域分类结果均显示此种特征组合只是简单的根据对象大小进行分类：例如只有主干湖泊水体对象相比其他对象因为面积，周长有很大差异，特征明显而被分类为湖泊水体，而其他对象均被分类为鱼塘。采用此种组合分类器过于简单，只是在由面积及周长特征构成的二维平面上进行分割。采用此种特征组合梁子湖区域分类总体精度达到90\%，斧头湖区域总体精度达到81.817\%，Kappa系数分别为0.615及0.642，易知鱼塘制图精度及自然水体用户精度应较高，比如在梁子湖区域两种精度达到100\%，而另外两种精度则较低，总之，采用此种特征组合虽然在精度评定表中数值良好，但是实际效果并不尽如人意，只是初步满足分类要求，还需进行改进，此外，根据上表面积及周长特征只是几何特征中的初级特征，因此后续特征组合以此为基础，并结合其他进阶特征组成新的特征组合进行优化改进，以达到更好的分类效果。
+\item[(3)]加入光谱特征进行组成新的特征组合，即同时考虑对象的大小及物理性质进行分类：
+
+此时梁子湖分类总体精度达到93.636\%，水体制图精度和用户精度均达到甚至超过96\%，鱼塘用户精度相比上个周长面积组合上涨20\%，由于鱼塘制图精度较低，仅有63.636\%，因此梁子湖区域Kappa系数相比周长面积组合仅上涨0.017，为0.632。分析认为梁子湖区域由于一些湖泊支流被人为隔离变为鱼塘后，由于仅仅进行分割还未进行人为改造或者改造程度较轻使得分割水体水质与湖泊水质差异较小，并且这一部分水体原先隶属湖泊支流，与其他山中的鱼塘或者湖边建设的鱼塘相比面积相对较大，由于以上两种原因共同作用这些对象容易被误分类为湖泊自然水体。
+
+在考虑光谱特征后，斧头湖区域分类精度相比周长面积组合有明显提升，总体精度，制图精度，用户精度均在90\%左右，其中总体精度，自然水体和鱼塘的制图精度均为88.889\%，而自然水体用户精度为93.204\%，鱼塘用户精度相对较低，为83.253\%，Kappa系数相比周长面积组合有明显上涨，达到0.765。但是从分类效果图上来看，由于斧头湖区域鱼塘排列紧凑，相互之间彼此相邻，由于分辨率等原因，进行水体提取时，不同鱼塘很容易属于同一个对象，这样的一个对象相对其他对象而言面积较大。又因为斧头湖区域由于人类活动的影响，湖水与鱼塘水质差别不大，即光谱差别不大，因此这种提取出来相互粘连的鱼塘构成的对象，很容易被分类为水体，导致鱼塘用户精度降低。此外，观察表\ref{oli_fth_jindu}发现，采用此种分类组合后，发现与周长面积组合相比，在梁子湖与斧头湖区域，水体用户精度与鱼塘制图精度均有所下降，这也验证了与周长面积特征组合相比，有一部分鱼塘被误分为自然水体的事实。而水体制图精度与鱼塘用户精度相比周长面积组合均有所上升表明加入光谱特征后，分类器试图结合光谱信息从除主体湖泊水体对象以外的对象中探测自然水体，因此水体被误分为鱼塘的现象相对减弱。但是结合以上讨论，可以看出，加入光谱特征后，分类器还不够完善，其既存在不够灵敏的问题，即某些真正的自然水体并没有探测出来，但是在某些地方又会“矫枉过正”把某些真正的鱼塘对象分类为水体。说明加入光谱特征，即引入对象物理特征这一维度后，分类器既提高了分类精度，但是也提高了分类难度。因为这一维度对自然水体与鱼塘这两种物理性质相近、光谱相似的类别难以区分，甚至发生误判，或者训练集数据及特征本身可能存在一些“瑕疵”。因此之后的实验只采用几何特征，并试图通过引入高阶几何特性来理解自然水体与人工鱼塘这两种对象所蕴含的一些深层次性质。
+\item[(4)]只考虑几何特征：P2A与Compactness C是衡量对象紧凑性的两种指标，加入P2A与Compactness C两种指标作为新的特征组合，即考虑对象在宏观层面上的延展情况，分类结果显示：
+
+在梁子湖区域，总体精度达到了97.273\%，自然水体和鱼塘的制图精度均接近甚至超过98\%，鱼塘的制图精度也在90\%以上，Kappa系数达到了0.854，然而鱼塘的用户精度略低仅有83.333\%，说明有少量自然水体被误分为鱼塘，可能是由于山中部分自然水体，其形状相对较规则，延展性较差，对象比较紧凑，此类水体一般多为山中蓄水的小水库，其规模与鱼塘相比较大，但是仍然不能与湖泊支流相提并论，一般该种水体仍保留自然形态，因此仍然可以认为是自然水体。然而在斧头湖区域，该种特征组合的劣势暴露出来：虽然水体制图精度达到91.667\%，但是71.223\%与71.875\%的水体与鱼塘的用户精度，尤其是36.508\%的水体用户精度，使得分类效果大幅下降。在分类结果图中可以很明显的看出，有相当多的鱼塘被误分类为水体，这也暴露出此种分类方式的弊病：分析认为由于分辨率原因提取后不同鱼塘粘连在一起，构成一个新的对象，新的对象形状复杂，面积较大，则分类器认为该对象不够紧凑，具有向外延伸趋势较强，就会将该对象误分类为水体，从而Kappa系数仅有0.314。根据以上信息可以发现，通过考虑对象紧凑性并组合相应特征进行分类，分类器还不够完善，在梁子湖区域等鱼塘分布较为稀疏的地区分类效果较好但是在鱼塘分布集中的斧头湖地区分类器弊端得以显现，其对由于分辨率因素导致的鱼塘粘连现象不能很好地泛化，从而有大量鱼塘对象被误分类。因此接下来虽然仍然从宏观几何层面入手，但是在周长面积特征的基础上加入其他特征——矩形度并形成新的特征组合，进行分类。
+\item[(5)]依然利用进阶几何特征，从宏观层面入手，在周长面积特征基础上加入矩形度特征进行分类，分类结果显示：
+
+在梁子湖区域，总体精度达到92.727\%，鱼塘制图精度与水体用户精度高达100\%，说明基本没有鱼塘被误分为水体的现象存在，即在这500个随机点处鱼塘全部被正确分类，而水体制图精度达到91.919\%，然而，鱼塘的制图精度仅有51.895\%，这意味着有许多的水体被误分为鱼塘：推测由于矩形度仅考虑对象与矩形的相似度，如果自然水体非常接近于矩形，则其容易被误分为鱼塘，而这种对象广泛分布于湖泊支流，多是仅仅被分割，还未被人为改造成鱼塘的长条形水块，也包括被人为大规模改造的湖泊支流中大量鱼塘包围的一块还未进行改造的自然水体，这两种水体形状都与矩形类似，因此容易被分类器误判。在斧头湖区域分类效果有所改善，总体精度达到90.643\%，鱼塘制图精度及自然水体用户精度则分别达到了95.238\%与96.939\%，水体制图精度和鱼塘的用户精度略低，分别为为87.963\%和82.192\%，这说明也有一部分水体被误分为鱼塘，和梁子湖区域情况是类似，但较梁子湖情况略好：在斧头湖南部鱼塘集中区域，确实存在形状较为规则，与矩形相似的自然水体，但该种水体数量较少，分布范围较小，因此对精度评定结果影响不大。通过以上讨论可以看出，此种特征组合方式构成的分类器，分类方式较为简单，除了考虑对象大小以外其仅根据对象与矩形的相似程度进行评判，没有考虑对象，尤其是自然水体对象形状的灵活性，因此并不是一种较好的特征组合方式。
+\item[(6)]以上两点均是从宏观几何层面入手进行特征组合进而分类，现在依然采用进阶几何特征，但是从微观层面入手，即在原有周长面积特征的基础上加入对象弯曲特征进行分类。分类结果显示：
+
+在梁子湖区域，根据精度表结果，各指标数值均与考虑紧凑性的特征组合分类时相同，观察分类结果图发现，两种分类方案结果图几乎一致，仅有三个对象分类结果不同，其余对象分类结果均相同，而根据先前的讨论及Kappa系数可以确定，在前边的方案中考虑紧凑性的特征组合分类方式是效果最好的，而此时采用考虑对象弯曲特性的特征组合分类法与该在梁子湖区域达到几乎相同的效果（精度表结果相同说明500个点均未落在有差异的三个对象上），这可能暗示了考虑对象弯曲特性进行分类可能是存在一定优越性的，但是具体效果需要进一步检验。然而在斧头湖区域的分类结果表明，该种特征组合方式依然表现稳定，其总体精度达到了85.380\%，自然水体和鱼塘制图精度分别达到了86.111\%和84.127\%，自然水体制图精度则超过90\%，为90.291\%，虽然鱼塘制图精度为77.941\%，说明在该区域仍然有一部分水体被误分为鱼塘，但是其精度相比考虑紧凑度特性的分类方案有6\%的提升。然而，相比于考虑紧凑度特性的分类，该方案的优势在于鱼塘的高制图精度，这意味着鱼塘被误分类为水体的情况大量减少，通过分类结果图对比可以清晰的看到大量在前者被误分类为水体的区域在该图像上被很好的保留了鱼塘的类别，这说明此种分类方法受由于分辨率因素影响导致鱼塘粘连从而对象变复杂的干扰较小。推测可能是由于此种特征组合考虑了对象的边界特性，而鱼塘粘连可以看成对象之间简单拼接构成新对象，而新对象依然保留了拼接前对象的边界特性，对象边界为规则，边界像素曲率多为0的性质在拼接后依然保留，因此该种特征组合能较好地探测出鱼塘对象。
+
+尽管存在许多分类误差，但是考虑对象弯曲程度的特征组合依然有其优越性：从另一个角度考虑，前文中表\ref{oli_lzh_jindu}及\ref{oli_fth_jindu}显示梁子湖区域水体提取精度较高，而斧头湖区域采用同样的方式进行水体提取精度却明显不如梁子湖，这说明斧头湖区域的处理较为困难，即斧头湖区域是一个更为复杂的场景，而考虑对象紧凑性与考虑对象弯曲特性这两种在同一个训练集上的特征选取方案在梁子湖区域这一简单场景中分类精度几乎完全相同，然而在斧头湖这一复杂场景上，后者精度与效果远远强于前者，这意味着后者更为稳健，与前者相比泛化能力更出众。由此说明，从微观层面入手来考虑对象的边界特征进行自然水体及鱼塘的分类是较为正确的选择，分析认为对象的边界特性是从几何角度区分自然形态与人为形态对象的最本质特征，因此此种特征组合方式及分类方法更有利于对自然水体及人工鱼塘这两种物理性质相近的水体进行区分。
+\end{itemize}
+梁子湖研究区域TM传感器影像分类结果如图\ref{tm_lzh}所示，其对应精度评定结果见表\ref{tm_lzh_jindu}
+\begin{figure*}[p]
+	\centering
+	\subfigure[Spec]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_tm/spec.pdf}
+	}
+	\subfigure[P+A]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_tm/PA.pdf}
+	}
+	\subfigure[Spec+P+A]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_tm/spec_PA.pdf}
+	}
+	\subfigure[P+A+ger]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_tm/PA_ger.pdf}
+	}
+	\subfigure[P+A+rec]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_tm/PA_rec.pdf}
+	}
+	\subfigure[P+A+cur]{
+		\includegraphics[width=0.25\textwidth]{./figure/lzh_tm/PA_cur.pdf}
+	}
+	\caption{梁子湖区域TM影像水体分类结果}
+	\label{tm_lzh}
+\end{figure*}
+
+\begin{table}[p]
+	\small
+	\newcommand{\tabincell}[2]{\begin{tabular}{@{}#1@{}}#2\end{tabular}}  
+	\centering
+	\caption{梁子湖区域TM传感器影像分类精度}
+	\begin{tabular}{ccccccc}
+		\toprule
+		&  &\multicolumn{2}{c}{制图精度}&\multicolumn{2}{c}{用户精度} &\\ \midrule 
+		特征组合&总体精度  &湖泊水体    & 鱼塘  &湖泊水体&鱼塘&Kappa系数\\
+		spec&	6.306\%&	0.000\%&	100.000\%&	0.000\%&	6.306\%&	0.000\\
+		P+A&	83.784\%&	83.654\%&	85.714\%&	98.864\%&	26.087\%&	0.336\\
+		P+A+spec&	83.784\%&	83.654\%&	85.714\%&	98.864\%&	26.087\%&	0.336\\
+		P+A+ger&	96.396\%&	98.077\%&	71.429\%&	98.077\%&	71.429\%&	0.695\\
+		P+A+rec&	95.495\%&	96.154\%&	85.714\%&	99.010\%&	60.000\%&	0.682\\
+		P+A+cur&	96.396\%&	98.077\%&	71.429\%&	98.077\%&	71.429\%&	0.695\\
+		\bottomrule
+	\end{tabular}
+	\label{tm_lzh_jindu}
+\end{table}
+\subsubsection{讨论}
+尽管考虑对象弯曲程度的特征组合有其优越性，图\ref{SVM_result}中区域6依然显示了利用该种特征分类存在的一些问题：
+\begin{itemize}
+\item 正上方方形鱼塘由于植被覆盖，鱼塘提取不完全，对象边界变复杂，被分类为水体：这表明提取时尽管采取自动化水体提取策略，其依然会受到混合像元的影响。
+\item 由于分辨率的原因，在30m分辨率影像上，下方河流提取不完全，使得对象边界变简单，被分类为鱼塘，这表明提取+分类的效果可能在低分辨率上无法完全体现，可能需要后续高分辨率影像实验来证明相对于其他特征组合的优越性。
+\item 由于分辨率因素导致不同水体提取后属于一个对象，对象边界变复杂，被分类为水体，例如图像左边的鱼塘区域，该问题虽然在紧凑性特征组合上较为严重，但是在考虑弯曲程度的特征组合上也无法忽视，有待于后续高分辨率影像检验。
+\item 由于分辨率或者提取因素影响，即使是自然水体也会出现规则边界，从而被分类为鱼塘，例如正右侧水体，解决此类问题的方法一种是在更高分辨率影像上检验，另一种则是采用其他分类思想，因为此时面向对象级别的分类可能已经不足以区分此类地物，需要面向场景级别的分类进行语义层面上的进一步判断。
+\end{itemize}
+
+\section{结论}
+	本文根据面向对象的思想，从光谱和几何两个方面获取自动化提取的水体对象的特征，通过将不同尺度，不同维度的特征进行组合并利用SVM分类算法，获取了不同特征组合的分类结果并进行精度评定，精度评价结果显示，水体提取效果较好，而不同的特征组合在各自较优的模型参数下进行分类会得到不同结果表明因为数据点在不同特征空间有着不同的分布。分类结果表明，纯光谱特征对区分水体对象几乎不起作用，面积周长作为基本几何特征，可以对水体对象初步分割，而紧凑性，规则度，弯曲程度这些高级几何特征则是在几何层面的更高维度对对象进行探测。分类结果还显示，从对象弯曲性这一角度来衡量水体对象之间的差异较其他特征更为有效，其受由于分辨率因素将导致的对象粘连引起的对象形态改变的影响较弱，且在30m分辨率影像条件下的不同场景有较强的的适应性，因此可以考虑通过对象的弯曲程度这种微观特征从几何角度来衡量自然水体与人工水体的差异，并有望应用到其他类似的自然地物与人工地物类型的分类上。
+\begin{thankpage}
+	时光匆匆，当我写到这里时，意味着四年的大学生活即将结束，在这四年，我收获了很多，也改变了许多，在此，我要向所有支持、帮助、鼓励我的人致谢。
+	
+	首先要感谢的是指导老师，也是我的班主任
+	\raisebox{0.5mm}{------}曾喆老师。对于本论文的完成，他功不可没。无论是从最初的选题，查阅文献，或是中间的实验方法，到最后阶段论文的修改，他都给予了我最真诚无私的帮助，为我排忧解难。在日常生活中他也经常与我交流讨论学术问题，助我步入科研的正轨，当他得知我要用\LaTeX{}进行论文撰写时，虽然他一开始并不认可我的做法，但是最终也对我表示了理解，我十分感谢他能给我这次机会，让我能够展示自己，为这四年画上一个自认为圆满的句号，可以说，他就是我科研的领路人；此外，我还要感谢校外指导老师也是我今后的导师
+	\raisebox{0.5mm}{------}杜博老师。虽然现在我们还素未谋面，但是他在今年给我布置的一些任务，点燃了我对机器学习以及人工智能的激情，通过学习机器学习相关知识使我思维更加活跃，也促使我对一些问题的认识发生了转变，这也是本篇论文定题以及最终完成的的一个重要原因。
+	
+	接下里我要感谢大学里所有教导过我对老师以及我的同学，感谢老师们教会我专业知识，以及掌握专业技能，感谢同学们一直以来的陪伴，其中特别要感谢557宿舍的兄弟们，正因为有了他们的支持与帮助，前进的道路上才不会感到孤独。
+	
+	最后，我要感谢我的父母，感谢他们二十年的培养，他们给予了我物质支持，也是我的精神支柱，是我努力的的源泉，谢谢你们！
+\end{thankpage}
+\bibliography{./bibs/bibliography.bib}
+
+%\begin{generalappendices}
+%%\begin{appendices}
+%	\section{Appendix 1}
+%	\subsection{Some Appendix}
+%	\lipsum[11]
+%	\section{Appendix 2}
+%	\subsection{Some Other Appendix}
+%%\end{appendices}[toc, page, title, titletoc, header]
+%\end{generalappendices}
+\end{document}
